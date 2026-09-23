@@ -1,0 +1,24 @@
+[project]
+name = "course-notes-rag"
+version = "0.1.0"
+description = "Local-first course notes retrieval and optional Google RAG"
+requires-python = ">=3.11,<3.14"
+dependencies = [
+  "chainlit>=2.8,<3",
+  "chromadb>=1.0,<2",
+  "docx2txt>=0.9",
+  "langchain-chroma>=0.2,<1",
+  "langchain-community>=0.3,<1",
+  "langchain-core>=0.3,<2",
+  "langchain-google-genai>=2,<5",
+  "langchain-google-vertexai>=2,<4",
+  "langchain-text-splitters>=0.3,<2",
+  "pypdf>=5,<7",
+]
+
+[dependency-groups]
+dev = ["pytest>=8,<10"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
