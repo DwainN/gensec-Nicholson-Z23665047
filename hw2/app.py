@@ -18,6 +18,7 @@ from rag_engine import NotesRAG, format_sources
 
 
 DATABASE = Path(__file__).parent / "data" / "chromadb"
+DEMO_NOTE = Path(__file__).parent / "samples" / "demo_security_notes.md"
 MAX_UPLOAD_BYTES = 20 * 1024 * 1024
 
 
@@ -41,9 +42,25 @@ async def on_chat_start() -> None:
         ),
         actions=[
             cl.Action(name="upload_note", label="Upload note", payload={"action": "upload"}),
+            cl.Action(name="load_demo", label="Load demo notes", payload={"action": "demo"}),
             cl.Action(name="switch_google", label="Google answer mode", payload={"action": "google"}),
         ],
     ).send()
+
+
+@cl.action_callback("load_demo")
+async def load_demo(action: cl.Action) -> None:
+    """Index bundled synthetic notes for an instant local demonstration."""
+    try:
+        count = engine().index(DEMO_NOTE)
+        await cl.Message(
+            content=(
+                f"Loaded **synthetic demo notes** ({count} new excerpt(s)). "
+                "Try: **How do passkeys resist phishing?**"
+            )
+        ).send()
+    except Exception:
+        await cl.Message(content="Could not load the bundled demo notes.").send()
 
 
 @cl.action_callback("upload_note")
@@ -108,7 +125,10 @@ async def switch_local(action: cl.Action) -> None:
     cl.user_session.set("mode", "local")
     await cl.Message(
         content="Local retrieval mode is active. Answers will show source excerpts only.",
-        actions=[cl.Action(name="upload_note", label="Upload note", payload={"action": "upload"})],
+        actions=[
+            cl.Action(name="upload_note", label="Upload note", payload={"action": "upload"}),
+            cl.Action(name="load_demo", label="Load demo notes", payload={"action": "demo"}),
+        ],
     ).send()
 
 

@@ -93,6 +93,8 @@ class NotesRAG:
         if mode == "google":
             if not os.getenv("GOOGLE_CLOUD_PROJECT"):
                 raise ValueError("GOOGLE_CLOUD_PROJECT is required for Google mode")
+            if not os.getenv("GOOGLE_MODEL"):
+                raise ValueError("GOOGLE_MODEL is required for Google mode")
             from langchain_google_vertexai import VertexAIEmbeddings
 
             model = os.getenv("GOOGLE_EMBEDDING_MODEL", "gemini-embedding-001")
@@ -115,7 +117,7 @@ class NotesRAG:
         splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
         chunks = splitter.split_documents(documents)
         ids = [chunk_id(doc) for doc in chunks]
-        existing = set(self.store.get(ids=ids, include=[])["ids"])
+        existing = set(self.store.get(ids=list(dict.fromkeys(ids)), include=[])["ids"])
         new = []
         for ident, doc in zip(ids, chunks):
             if ident not in existing:

@@ -63,3 +63,19 @@ def test_chunk_id_preserves_pdf_page_identity():
 def test_embedding_model_changes_collection_name():
     assert collection_name("google", "model-a") != collection_name("google", "model-b")
     assert collection_name("local") != collection_name("google", "model-a")
+
+
+def test_google_mode_requires_chat_model_before_initializing_embeddings(tmp_path: Path, monkeypatch):
+    monkeypatch.setenv("GOOGLE_CLOUD_PROJECT", "demo-project")
+    monkeypatch.delenv("GOOGLE_MODEL", raising=False)
+    with pytest.raises(ValueError, match="GOOGLE_MODEL"):
+        NotesRAG(tmp_path / "db", mode="google")
+
+
+def test_repeated_identical_chunks_index_once(tmp_path: Path):
+    note = tmp_path / "repeats.txt"
+    note.write_text("repeat " * 700, encoding="utf-8")
+    rag = NotesRAG(tmp_path / "db")
+    first_count = rag.index(note)
+    assert first_count > 0
+    assert rag.index(note) == 0
