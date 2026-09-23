@@ -2,3 +2,12 @@ env/
 .venv
 *.pyc
 __pycache__/
+
+.chromadb/
+.env
+.env.*
+!.env.example
+.pytest_cache/
+.ruff_cache/
+.chainlit/
+.files/
