@@ -2,7 +2,8 @@
 
 The course's Chainlit start/message callbacks, Chroma retrieval, and
 prompt/model/output-parser chain are retained through ``NotesRAG``. Uploading
-notes and local retrieval are added for this homework.
+notes, local retrieval, and a per-document source filter are added for this
+homework.
 """
 
 from __future__ import annotations
@@ -27,10 +28,22 @@ def engine(mode: str | None = None) -> NotesRAG:
     return NotesRAG(DATABASE, mode or cl.user_session.get("mode") or "local")
 
 
+FILTER_ACTIONS = [
+    cl.Action(name="filter_source", label="Filter by document", payload={"action": "filter"}),
+]
+
+
+def source_filter_label() -> str:
+    """Describe the session's active source filter for display in a reply."""
+    selected = cl.user_session.get("source_filter")
+    return f"filtered to **{selected}**" if selected else "searching **all documents**"
+
+
 @cl.on_chat_start
 async def on_chat_start() -> None:
     """Explain the two modes and offer a file upload in the browser."""
     cl.user_session.set("mode", "local")
+    cl.user_session.set("source_filter", None)
     await cl.Message(
         content=(
             "# Course Notes RAG\n\n"
@@ -38,12 +51,15 @@ async def on_chat_start() -> None:
             "then ask a question. I will show relevant numbered excerpts; this mode does not "
             "generate an AI answer or use an API key.\n\n"
             "Use **Google answer mode** only if your Google Cloud environment is configured. "
-            "It can incur cloud charges."
+            "It can incur cloud charges.\n\n"
+            "By default I search **all** uploaded documents. Use **Filter by document** to "
+            "restrict retrieval to one of them."
         ),
         actions=[
             cl.Action(name="upload_note", label="Upload note", payload={"action": "upload"}),
             cl.Action(name="load_demo", label="Load demo notes", payload={"action": "demo"}),
             cl.Action(name="switch_google", label="Google answer mode", payload={"action": "google"}),
+            *FILTER_ACTIONS,
         ],
     ).send()
 
@@ -99,6 +115,35 @@ async def upload_note(action: cl.Action) -> None:
     await cl.Message(content=response).send()
 
 
+@cl.action_callback("filter_source")
+async def filter_source(action: cl.Action) -> None:
+    """Ask which indexed document to restrict retrieval to, or clear the filter.
+
+    Lists the distinct ``source`` filenames currently indexed in the active
+    mode's collection (see ``NotesRAG.list_sources``) as buttons, plus an
+    "All documents" choice that clears the filter. The choice is stored in
+    ``cl.user_session["source_filter"]`` and read by ``on_message``.
+    """
+    sources = engine().list_sources()
+    if not sources:
+        await cl.Message(content="No documents are indexed yet. Upload a note first.").send()
+        return
+    choices = [cl.Action(name="filter_choice", label="All documents", payload={"source": None})]
+    choices += [
+        cl.Action(name="filter_choice", label=name, payload={"source": name}) for name in sources
+    ]
+    response = await cl.AskActionMessage(
+        content="Search which document?",
+        actions=choices,
+        timeout=120,
+    ).send()
+    if not response:
+        return
+    selected = response.get("payload", {}).get("source")
+    cl.user_session.set("source_filter", selected)
+    await cl.Message(content=f"Retrieval is now {source_filter_label()}.").send()
+
+
 @cl.action_callback("switch_google")
 async def switch_google(action: cl.Action) -> None:
     """Switch modes after confirming the Google configuration can initialize."""
@@ -110,11 +155,13 @@ async def switch_google(action: cl.Action) -> None:
         ).send()
         return
     cl.user_session.set("mode", "google")
+    cl.user_session.set("source_filter", None)
     await cl.Message(
         content="Google answer mode is active. Upload the same notes here before asking; this mode uses its own index.",
         actions=[
             cl.Action(name="upload_note", label="Upload note", payload={"action": "upload"}),
             cl.Action(name="switch_local", label="Local retrieval mode", payload={"action": "local"}),
+            *FILTER_ACTIONS,
         ],
     ).send()
 
@@ -123,11 +170,13 @@ async def switch_google(action: cl.Action) -> None:
 async def switch_local(action: cl.Action) -> None:
     """Return to free local excerpt retrieval."""
     cl.user_session.set("mode", "local")
+    cl.user_session.set("source_filter", None)
     await cl.Message(
         content="Local retrieval mode is active. Answers will show source excerpts only.",
         actions=[
             cl.Action(name="upload_note", label="Upload note", payload={"action": "upload"}),
             cl.Action(name="load_demo", label="Load demo notes", payload={"action": "demo"}),
+            *FILTER_ACTIONS,
         ],
     ).send()
 
@@ -135,8 +184,9 @@ async def switch_local(action: cl.Action) -> None:
 @cl.on_message
 async def on_message(message: cl.Message) -> None:
     """Answer from retrieved notes and display the exact excerpts used."""
+    source = cl.user_session.get("source_filter")
     try:
-        result = engine().ask(message.content)
+        result = engine().ask(message.content, source=source)
     except ValueError as error:
         await cl.Message(content=str(error)).send()
         return
@@ -145,8 +195,9 @@ async def on_message(message: cl.Message) -> None:
         return
 
     sources = format_sources(result["sources"])
+    header = f"({source_filter_label()})"
     if result["mode"] == "local":
-        content = "**Local retrieval — source excerpts only (no AI-generated answer)**\n\n" + sources
+        content = f"**Local retrieval — source excerpts only (no AI-generated answer)** {header}\n\n" + sources
     else:
-        content = f"**Google answer**\n\n{result['answer']}\n\n**Retrieved source excerpts**\n\n{sources}"
+        content = f"**Google answer** {header}\n\n{result['answer']}\n\n**Retrieved source excerpts**\n\n{sources}"
     await cl.Message(content=content).send()

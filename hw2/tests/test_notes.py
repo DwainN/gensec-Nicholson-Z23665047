@@ -79,3 +79,44 @@ def test_repeated_identical_chunks_index_once(tmp_path: Path):
     first_count = rag.index(note)
     assert first_count > 0
     assert rag.index(note) == 0
+
+
+def test_list_sources_reports_every_indexed_filename(tmp_path: Path):
+    first = tmp_path / "alpha.md"
+    first.write_text("# Alpha\nPasskeys resist phishing.\n", encoding="utf-8")
+    second = tmp_path / "beta.md"
+    second.write_text("# Beta\nMFA adds a second factor.\n", encoding="utf-8")
+    rag = NotesRAG(tmp_path / "db")
+    rag.index(first)
+    rag.index(second)
+    assert rag.list_sources() == ["alpha.md", "beta.md"]
+
+
+def test_source_filter_excludes_documents_from_other_sources(tmp_path: Path):
+    """Restricting ``ask`` to one source must never surface another source's text."""
+    alpha = tmp_path / "alpha.md"
+    alpha.write_text("# Alpha\nPasskeys use public key cryptography to resist phishing.\n", encoding="utf-8")
+    beta = tmp_path / "beta.md"
+    beta.write_text("# Beta\nPasskeys are also discussed here for the search index.\n", encoding="utf-8")
+    rag = NotesRAG(tmp_path / "db")
+    rag.index(alpha)
+    rag.index(beta)
+
+    unfiltered = rag.ask("What resists phishing?", limit=10)
+    unfiltered_sources = {doc.metadata["source"] for doc in unfiltered["sources"]}
+    assert unfiltered_sources == {"alpha.md", "beta.md"}
+
+    filtered = rag.ask("What resists phishing?", limit=10, source="alpha.md")
+    filtered_sources = {doc.metadata["source"] for doc in filtered["sources"]}
+    assert filtered_sources == {"alpha.md"}
+    assert "beta.md" not in filtered_sources
+    assert all("Passkeys" in doc.page_content or "passkey" in doc.page_content.lower() for doc in filtered["sources"])
+
+
+def test_source_filter_rejects_unknown_document_name(tmp_path: Path):
+    note = tmp_path / "alpha.md"
+    note.write_text("# Alpha\nPasskeys resist phishing.\n", encoding="utf-8")
+    rag = NotesRAG(tmp_path / "db")
+    rag.index(note)
+    with pytest.raises(ValueError, match="alpha.exe"):
+        rag.ask("What resists phishing?", source="alpha.exe")

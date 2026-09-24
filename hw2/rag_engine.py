@@ -111,6 +111,17 @@ class NotesRAG:
             persist_directory=str(self.persist_directory),
         )
 
+    def list_sources(self) -> list[str]:
+        """List the distinct filenames indexed in this mode's collection.
+
+        Adapted from the ``document_data_sources`` loop in the course's
+        ``07_rag_loaddb.py`` / ``09_rag_query.py``, which reads
+        ``vectorstore.get()['metadatas']`` to show what can be queried.
+        """
+        metadatas = self.store.get(include=["metadatas"])["metadatas"]
+        sources = {metadata["source"] for metadata in metadatas if "source" in metadata}
+        return sorted(sources)
+
     def index(self, path: str | Path, source_name: str | None = None) -> int:
         """Split and store new chunks; repeated uploads of the same file add none."""
         documents = load_note(path, source_name)
@@ -127,14 +138,29 @@ class NotesRAG:
             self.store.add_documents([doc for _, doc in new], ids=[ident for ident, _ in new])
         return len(new)
 
-    def ask(self, question: str, limit: int = 4) -> dict:
-        """Retrieve excerpts and optionally generate a grounded Google answer."""
+    def ask(self, question: str, limit: int = 4, source: str | None = None) -> dict:
+        """Retrieve excerpts and optionally generate a grounded Google answer.
+
+        Args:
+            question: The user's question; blank questions are rejected.
+            limit: Maximum number of excerpts to retrieve.
+            source: If given, restrict retrieval to chunks whose ``source``
+                metadata equals this exact filename (as recorded by
+                ``notes_loader.load_note``/``index``). If ``None`` (the
+                default), all indexed documents in this mode are searched.
+                Raises ``ValueError`` if the name does not match any
+                indexed document, so a stale filter cannot silently return
+                results from every document.
+        """
         question = question.strip()
         if not question:
             raise ValueError("Enter a question")
         if self.store._collection.count() == 0:
             raise ValueError("Upload a note before asking a question")
-        documents = self.store.similarity_search(question, k=limit)
+        if source is not None and source not in self.list_sources():
+            raise ValueError(f"No indexed document named {source!r}")
+        search_filter = {"source": source} if source is not None else None
+        documents = self.store.similarity_search(question, k=limit, filter=search_filter)
         if self.mode == "local":
             return {"mode": "local", "answer": None, "sources": documents}
         model_name = os.getenv("GOOGLE_MODEL")
