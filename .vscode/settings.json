@@ -1,4 +1,4 @@
 {
-  "window.title": "Z23665047 | Homework 2 | ${activeEditorShort}${separator}${rootName}",
-  "python.defaultInterpreterPath": "${workspaceFolder}/hw2/.venv/Scripts/python.exe"
+  "window.title": "Z23665047 | Dwain Nicholson | Homework 4 | ${activeEditorShort}${separator}${rootName}",
+  "python.defaultInterpreterPath": "${workspaceFolder}/hw4/.venv/Scripts/python.exe"
 }
