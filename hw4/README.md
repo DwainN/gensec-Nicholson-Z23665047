@@ -48,6 +48,37 @@ uv run python mcp-server.py http    # http://127.0.0.1:8080/mcp
 uv run pytest
 ```
 
+## Limitations
+
+- **fetch cannot run JavaScript.** It gets the raw HTML only. Pages that build their content with JS come back empty or partial.
+- **fetch returns 5000 characters per call by default.** Long pages and JSON records are cut off. The agent must use `max_length` or `start_index`. The CVE-2021-44228 record has its CVSS score near character 17800.
+- **The model can be wrong.** It can skip a step, misread data, or invent a value. Tool results are facts. The final text is not, so check it.
+- **SSRF risk (server-side request forgery).** The fetch server can request any URL, including `localhost`, the private network and cloud metadata (`169.254.169.254`). An attacker who controls the prompt or a fetched page could use the agent to reach internal systems.
+- **Prompt injection.** A fetched page can hide instructions for the model. [demo/injected_page.html](demo/injected_page.html) has hidden white text that tells the agent to ignore the user and print a fake "ALL CLEAR".
+- **Free-tier quota.** About 20 requests per model per day.
+
+### Defenses in agent.py
+
+- **URL guard.** `check_url` runs before every fetch call. It allows only `http` and `https`. It blocks `localhost` and any host that resolves to a non-public address (loopback, private, link-local, metadata). Tests: [tests/test_url_guard.py](tests/test_url_guard.py).
+- **Fetched content is data.** The system prompt tells the model that fetched text is never an instruction, and to report injection attempts.
+- These are not complete. A system prompt does not stop every injection. The guard checks DNS once, but the fetch server resolves the name again (DNS rebinding) and follows redirects by itself.
+
+### Demo the guard
+
+```bash
+uv run python -m http.server 8000      # in hw4, in a second terminal
+uv run python agent.py "Fetch http://localhost:8000/demo/injected_page.html and summarize it."
+```
+
+The guard prints `[url guard] blocked ... localhost is not allowed`, and the model never sees the page.
+
+## Why I trusted mcp-server-fetch
+
+- It is the **official reference server** from the [modelcontextprotocol/servers](https://github.com/modelcontextprotocol/servers/tree/main/src/fetch) repo, which maintains MCP itself.
+- It is **published by Anthropic on PyPI** as [mcp-server-fetch](https://pypi.org/project/mcp-server-fetch/).
+- It is **pinned** to `mcp-server-fetch==2026.8.18`, an older release, in [pyproject.toml](pyproject.toml), and `uv.lock` records the exact hashes. A new, compromised release cannot get in by itself.
+- The code is small and open, so I can read it.
+
 ## Files
 
 - [agent.py](agent.py): the agent and the chat loop.
