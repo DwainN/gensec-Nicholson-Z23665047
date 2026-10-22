@@ -10,3 +10,8 @@ dependencies = [
   "langchain-mcp-adapters",
   "langchain-google-genai",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
