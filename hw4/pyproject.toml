@@ -1,0 +1,12 @@
+[project]
+name = "hw4-mcp"
+version = "0.1.0"
+description = "Homework 4: MCP server and LangChain agent"
+requires-python = ">=3.11,<3.14"
+dependencies = [
+  "fastmcp==2.13.0",
+  "mcp-server-fetch==2026.8.18",
+  "langchain",
+  "langchain-mcp-adapters",
+  "langchain-google-genai",
+]
