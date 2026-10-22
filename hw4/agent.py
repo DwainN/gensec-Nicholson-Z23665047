@@ -23,6 +23,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from langchain.agents import create_agent
 from langchain_core.messages import AIMessage, ToolMessage
+from langchain_core.tools import StructuredTool
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_mcp_adapters.client import MultiServerMCPClient
 
@@ -43,14 +44,46 @@ SERVERS = {
     },
 }
 
+# Long tool arguments (like a whole fetched page) are cut to this many chars.
+ARG_PREVIEW = 200
+
 SYSTEM_PROMPT = """You are a security analyst assistant.
 For each request, first make a short plan of the steps. Then do the steps one at a time.
-- Use the fetch tool to get web pages and API data.
+- Use the fetch tool to get web pages and API data. fetch returns only 5000
+  characters by default. For JSON APIs and long records, call it with
+  max_length=20000. If the result says the content was truncated, call fetch
+  again with start_index set to the next character, until you have what you need.
 - Use the secops_toolkit tools to analyze data: extract_iocs, cvss_to_severity,
   hash_text and password_strength.
+- Pass the full fetched text to extract_iocs. Do not extract IOCs by hand.
+- When the user asks for the incident_brief prompt, call get_incident_brief_prompt
+  and answer every section it asks for.
 - Use tool results for facts. Do not guess values that a tool can give you.
 - If a tool fails, say what failed and why.
 End with a short, clear answer for the user."""
+
+
+def prompt_tool(client: MultiServerMCPClient) -> StructuredTool:
+    """Wrap the incident_brief MCP prompt as a tool the model can call.
+
+    MCP prompts are not tools, so the model cannot use them on its own.
+    This tool gets the prompt text from the secops_toolkit server.
+
+    Args:
+        client: The connected MCP client.
+
+    Returns:
+        A tool named get_incident_brief_prompt.
+    """
+
+    async def get_incident_brief_prompt(cve_id: str) -> str:
+        """Get the incident_brief prompt template for a CVE id, e.g. CVE-2021-44228."""
+        messages = await client.get_prompt(
+            "secops_toolkit", "incident_brief", arguments={"cve_id": cve_id}
+        )
+        return "\n".join(str(m.content) for m in messages)
+
+    return StructuredTool.from_function(coroutine=get_incident_brief_prompt)
 
 
 def build_llm() -> ChatGoogleGenerativeAI:
@@ -103,6 +136,8 @@ def show_step(message) -> None:
     if isinstance(message, AIMessage) and message.tool_calls:
         for call in message.tool_calls:
             args = json.dumps(call["args"], ensure_ascii=False)
+            if len(args) > ARG_PREVIEW:
+                args = f"{args[:ARG_PREVIEW]}... ({len(args)} chars)"
             print(f"  [tool call] {call['name']}({args})")
     elif isinstance(message, ToolMessage):
         size = len(str(message.content))
@@ -131,14 +166,17 @@ async def run_agent() -> None:
     """Start both MCP servers, build the agent, and run the chat loop."""
     llm = build_llm()
     client = MultiServerMCPClient(SERVERS)
-    tools = await client.get_tools()
+    tools = await client.get_tools() + [prompt_tool(client)]
     agent = create_agent(model=llm, tools=tools, system_prompt=SYSTEM_PROMPT)
 
     print("Security analyst agent. Servers: " + ", ".join(SERVERS))
     print("Tools: " + ", ".join(tool.name for tool in tools))
 
     if len(sys.argv) > 1:
-        await ask(agent, " ".join(sys.argv[1:]))
+        try:
+            await ask(agent, " ".join(sys.argv[1:]))
+        except Exception as e:
+            print(f"Error: {e}")
         return
 
     print("Type a question. Press Enter on an empty line to quit.")

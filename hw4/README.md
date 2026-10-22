@@ -23,6 +23,8 @@ cp .env.example .env        # then put your key after GOOGLE_API_KEY=
 uv run python agent.py
 ```
 
+Use `GOOGLE_MODEL=gemini-3.8-flash`. New API keys can no longer use `gemini-2.5-flash` (404 NOT_FOUND).
+
 Type a question at the `llm>>` prompt. Press Enter on an empty line to quit.
 
 To ask one question and exit:
