@@ -190,6 +190,6 @@ if __name__ == "__main__":
     if len(sys.argv) != 2 or sys.argv[1] not in ("stdio", "http"):
         sys.exit("usage: python mcp-server.py [stdio|http]")
     if sys.argv[1] == "stdio":
-        mcp.run(transport="stdio")
+        mcp.run(transport="stdio", show_banner=False)
     else:
         mcp.run(transport="http", host="127.0.0.1", port=8080)

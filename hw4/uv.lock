@@ -560,6 +560,7 @@ dependencies = [
     { name = "langchain-google-genai" },
     { name = "langchain-mcp-adapters" },
     { name = "mcp-server-fetch" },
+    { name = "python-dotenv" },
 ]
 
 [package.dev-dependencies]
@@ -574,6 +575,7 @@ requires-dist = [
     { name = "langchain-google-genai" },
     { name = "langchain-mcp-adapters" },
     { name = "mcp-server-fetch", specifier = "==2026.8.18" },
+    { name = "python-dotenv", specifier = ">=1.2.4" },
 ]
 
 [package.metadata.requires-dev]
