@@ -19,8 +19,10 @@ import asyncio
 
 import agent  # the real HW4 agent module
 
-# Relax ONLY the SSRF/URL guard, so the local test page is reachable offline.
-# Everything else (system prompt, model, tools) is exactly agent.py.
+# Neutralize ONLY the URL guard: check_url now returns None for EVERY url, so the
+# local test page is reachable offline. No other code is changed; the system
+# prompt, model, and tools are exactly agent.py. The injection/data-poisoning
+# flaw under test is in how the model treats fetched text, not where it is hosted.
 agent.check_url = lambda url: None
 
 if __name__ == "__main__":
