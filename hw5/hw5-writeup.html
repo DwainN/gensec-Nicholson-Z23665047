@@ -13,7 +13,7 @@ ul{margin:4pt 0 4pt 0}li{margin:2pt 0}p{margin:5pt 0}
 <p class="small">Security (System) Engineering with Generative AI</p>
 <h1>Homework 5 - AI Security: Penetration Test of an MCP Agent</h1>
 <p class="meta">Student: Dwain Nicholson     FAU ID: Z23665047     Course: COT 4930</p>
-<p class="meta">Screencast Recording URL: &lt;enter here the unlisted YouTube URL of your screencast&gt;</p>
+<p class="meta">Screencast Recording URL: https://youtu.be/LCdMgc0AChM</p>
 <p class="meta">GitHub Repository URL: https://github.com/DwainN/gensec-Nicholson-Z23665047   (homework code in /hw5; target application in /hw4)</p>
 <p class="meta">Application tested: secops_toolkit - MCP security-analyst agent (Homework 4)</p>
 <p>Application description: A LangChain agent (Google Gemini) that connects to two MCP servers at the same time - a custom &quot;secops_toolkit&quot; server (tools: extract_iocs, cvss_to_severity, hash_text, password_strength, and an incident_brief prompt) and the published mcp-server-fetch server. The agent fetches web pages and API data and analyzes it for a security analyst. It ships two defenses: (1) a URL guard that blocks server-side request forgery (SSRF) to localhost, private, and cloud-metadata addresses; and (2) a system prompt that labels all fetched content as untrusted DATA and instructs the model to report any prompt-injection attempt found inside a page.</p>
