@@ -1,0 +1,31 @@
+Agent selected: OpenAI Codex in ChatGPT Work mode.
+
+ORIGINAL CONVERSATION INPUTS (verbatim user messages)
+1. yo can we do this?
+   Context: selected page was the course's 06.3 Homework assignment.
+2. Okay, let's go ahead. I'm about to go to sleep.
+   Context: the assistant proposed a Python password-strength checker and the
+   user authorized proceeding. Codex generated the code through file tools.
+
+REPLAY PROMPT (agent-prepared specification; paste into Codex during recording)
+This consolidates the approved app and implementation choices. It is not a
+claim that the user previously typed this longer prompt. The recorded replay
+and its screenshots must document its actual use.
+
+Create an offline educational password-strength checker in Python 3.10+
+using only the standard library. Work in the current directory and create
+app.py and test_app.py. Use a terminal interface with hidden getpass input;
+refuse echoed-input fallback or noninteractive stdin. Never accept passwords
+as command-line arguments, echo them, log them, save them, transmit them,
+or execute input as code. Ask users to use made-up samples. Validate 1 to
+256 printable characters and reject control characters. Rate short or
+built-in common passwords and one/two-character repetition as Weak, medium
+length or obvious sequences as Moderate, and longer candidates as Stronger
+candidate. Give clear improvement tips. State that this is a basic heuristic,
+not a breach check or security guarantee, and Python cannot guarantee memory
+erasure. Include --demo with fake examples: password123!, twenty a's, a long
+passphrase, and an overlength rejection. Add unittest checks for boundaries,
+Unicode, case-insensitive common matching, repeated/sequence patterns,
+shell/SQL/HTML-like text handled as data, no secret in output, terminal
+fallback rejection, and demo mode. Run tests and the demo. Keep the code
+small and explain security choices and limitations for a 5-minute recording.

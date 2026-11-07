@@ -1,0 +1,27 @@
+OFFLINE PASSWORD CHECKER
+Educational heuristic, not a guarantee or a breach database check.
+Use made-up examples for class; never paste an actual account password.
+
+DEMO: Common fake example
+
+Rating: Weak
+Length: 12
+- Use at least 16 characters; several unrelated words can help.
+- This matches the small built-in list of common passwords.
+- Use a unique password for every account and enable MFA.
+
+DEMO: Long repeated fake example
+
+Rating: Weak
+Length: 20
+- Avoid repeating only one or two characters.
+- Use a unique password for every account and enable MFA.
+
+DEMO: Long fake passphrase
+
+Rating: Stronger candidate
+Length: 28
+- Use a unique password for every account and enable MFA.
+
+LIMIT TEST: 257 characters
+Rejected: Enter between 1 and 256 characters.

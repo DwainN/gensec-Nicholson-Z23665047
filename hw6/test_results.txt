@@ -1,0 +1,15 @@
+test_adversarial_text_is_data (test_app.CheckerTests.test_adversarial_text_is_data) ... ok
+test_common (test_app.CheckerTests.test_common) ... ok
+test_control_characters (test_app.CheckerTests.test_control_characters) ... ok
+test_demo (test_app.CheckerTests.test_demo) ... ok
+test_insecure_terminal_fails_closed (test_app.CheckerTests.test_insecure_terminal_fails_closed) ... ok
+test_interactive_output_never_echoes_input (test_app.CheckerTests.test_interactive_output_never_echoes_input) ... ok
+test_length_boundaries (test_app.CheckerTests.test_length_boundaries) ... ok
+test_long_and_unicode (test_app.CheckerTests.test_long_and_unicode) ... ok
+test_repeated (test_app.CheckerTests.test_repeated) ... ok
+test_sequences (test_app.CheckerTests.test_sequences) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 0.002s
+
+OK
