@@ -1,0 +1,9 @@
+[project]
+name = "hw7"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "fast-agent-mcp>=0.10.53",
+    "fastmcp>=4.1.3",
+    "mcp>=2.3.0",
+]
